@@ -1,6 +1,6 @@
 name = "fukuwarai"
 pages_build_output_dir = "dist"
-compatibility_date = "2026-02-27"
+compatibility_date = "2026-02-26"
 
 [[r2_buckets]]
 binding = "BUCKET"
