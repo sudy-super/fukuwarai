@@ -197,6 +197,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 
 #btn-start { background: #e74c3c; color: white; }
 #btn-open  { background: #e67e22; color: white; }
+#btn-share { background: #1da1f2; color: white; }
 #btn-retry { background: #27ae60; color: white; }
 
 /* ── Drag ghost ──────────────────────────────── */

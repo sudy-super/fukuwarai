@@ -45,6 +45,7 @@ const ghostEl    = document.getElementById('ghost')          as HTMLDivElement;
 const ghostThumb = document.getElementById('ghost-thumb')    as HTMLDivElement;
 const btnStart   = document.getElementById('btn-start')      as HTMLButtonElement;
 const btnOpen    = document.getElementById('btn-open')       as HTMLButtonElement;
+const btnShare   = document.getElementById('btn-share')      as HTMLButtonElement;
 const btnRetry   = document.getElementById('btn-retry')      as HTMLButtonElement;
 
 // ── Game state ─────────────────────────────────────────────────────────────
@@ -204,9 +205,54 @@ function computeScore(): number {
   return Math.max(0, Math.round(100 - totalDeduction));
 }
 
-function setButtons(show: ('start' | 'open' | 'retry')[], openEnabled = false): void {
+/** 1200×630 の OGP 用画像を生成する。顔を中央に配置し、スコアを下部に描画する。 */
+async function captureOgpImage(): Promise<Blob> {
+  const OGP_W = 1200, OGP_H = 630;
+  const FACE_SIZE = REF_SIZE; // 480px — オフセットが REF_SIZE 基準なのでスケール 1
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = OGP_W;
+  canvas.height = OGP_H;
+  const ctx = canvas.getContext('2d')!;
+
+  // ページ背景色
+  ctx.fillStyle = '#fdf0d5';
+  ctx.fillRect(0, 0, OGP_W, OGP_H);
+
+  // 顔エリアを中央に配置
+  const faceX = (OGP_W - FACE_SIZE) / 2;
+  const faceY = (OGP_H - FACE_SIZE) / 2 - 20; // 少し上寄せしてスコア用の余白を確保
+
+  ctx.fillStyle = '#f0e0c8';
+  ctx.fillRect(faceX, faceY, FACE_SIZE, FACE_SIZE);
+
+  // ベースの顔
+  const faceBase = document.getElementById('face-base') as HTMLImageElement;
+  ctx.drawImage(faceBase, faceX, faceY, FACE_SIZE, FACE_SIZE);
+
+  // 配置済みパーツ (ox/oy は REF_SIZE 単位、FACE_SIZE=REF_SIZE なのでスケール 1)
+  for (const [id, { ox, oy }] of placed) {
+    const part = PARTS.find(p => p.id === id)!;
+    const img  = await loadImage(part.src);
+    ctx.drawImage(img, faceX + ox, faceY + oy, FACE_SIZE, FACE_SIZE);
+  }
+
+  // スコアテキスト
+  const score = computeScore();
+  ctx.font      = 'bold 38px "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
+  ctx.fillStyle = '#c0392b';
+  ctx.textAlign = 'center';
+  ctx.fillText(`そぽ笑い  一致度: ${score}%`, OGP_W / 2, faceY + FACE_SIZE + 52);
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'),
+  );
+}
+
+function setButtons(show: ('start' | 'open' | 'share' | 'retry')[], openEnabled = false): void {
   btnStart.style.display = show.includes('start') ? 'inline-block' : 'none';
   btnOpen.style.display  = show.includes('open')  ? 'inline-block' : 'none';
+  btnShare.style.display = show.includes('share') ? 'inline-block' : 'none';
   btnRetry.style.display = show.includes('retry') ? 'inline-block' : 'none';
   btnOpen.disabled = !openEnabled;
 }
@@ -347,9 +393,43 @@ btnOpen.addEventListener('click', () => {
   faceEl.classList.add('flash');
 
   gameState = 'revealed';
-  setButtons(['retry']);
+  setButtons(['share', 'retry']);
   progEl.textContent = '';
   scoreEl.textContent = `一致度: ${computeScore()}%`;
+});
+
+btnShare.addEventListener('click', async () => {
+  btnShare.disabled = true;
+  const origText = btnShare.textContent;
+  btnShare.textContent = '生成中…';
+  try {
+    const score = computeScore();
+    const blob  = await captureOgpImage();
+
+    const res = await fetch('/api/share', {
+      method: 'POST',
+      body: blob,
+      headers: { 'Content-Type': 'image/png' },
+    });
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    const { id } = await res.json() as { id: string };
+
+    const shareUrl = `${location.origin}/s/${id}`;
+    const text     = `そぽ笑い 一致度: ${score}%！`;
+
+    if (navigator.share) {
+      await navigator.share({ title: 'そぽ笑い', text, url: shareUrl });
+    } else {
+      const params = new URLSearchParams({ text: `${text} ${shareUrl}` });
+      window.open(`https://twitter.com/intent/tweet?${params}`, '_blank', 'noopener');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('シェアに失敗しました');
+  } finally {
+    btnShare.disabled  = false;
+    btnShare.textContent = origText;
+  }
 });
 
 btnRetry.addEventListener('click', () => {
