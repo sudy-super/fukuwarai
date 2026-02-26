@@ -332,8 +332,8 @@ btnShare.addEventListener('click', async () => {
             throw new Error(`Upload failed: ${res.status}`);
         const { id } = await res.json();
         const shareUrl = `${location.origin}/s/${id}`;
-        const text = `そぽ笑い 一致度: ${score}%！`;
-        const params = new URLSearchParams({ text: `${text} ${shareUrl}` });
+        const text = `そぽ笑いの一致度は${score}%でした！\n#そぽ笑い`;
+        const params = new URLSearchParams({ text: `${text}\n${shareUrl}` });
         window.open(`https://twitter.com/intent/tweet?${params}`, '_blank', 'noopener');
     }
     catch (err) {
