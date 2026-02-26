@@ -40,6 +40,7 @@ const faceEl     = document.getElementById('face-container') as HTMLDivElement;
 const blindEl    = document.getElementById('blindfold')      as HTMLDivElement;
 const trayEl     = document.getElementById('tray')           as HTMLDivElement;
 const progEl     = document.getElementById('progress')       as HTMLDivElement;
+const scoreEl    = document.getElementById('score')          as HTMLDivElement;
 const ghostEl    = document.getElementById('ghost')          as HTMLDivElement;
 const ghostThumb = document.getElementById('ghost-thumb')    as HTMLDivElement;
 const btnStart   = document.getElementById('btn-start')      as HTMLButtonElement;
@@ -171,6 +172,36 @@ function updateProgress(): void {
     return;
   }
   progEl.textContent = `${placed.size}/${PARTS.length}`;
+}
+
+/**
+ * 減点方式スコア計算。
+ * 100点満点から各パーツのズレに応じて減点する。
+ *
+ * - 理想位置: ox=0, oy=0 (各 PNG をそのまま重ねた状態)
+ * - 各パーツの満点: 100 / PARTS.length 点
+ * - ズレが tolerance (maxDist × 0.3) 以内なら比例減点、超えたら満点減点
+ */
+function computeScore(): number {
+  const sz    = faceEl.offsetWidth;
+  const scale = sz / REF_SIZE;
+  const maxDeductionPerPart = 100 / PARTS.length;
+
+  let totalDeduction = 0;
+  for (const [id, { ox, oy }] of placed) {
+    const c         = centers.get(id) ?? { cx: 0.5, cy: 0.5 };
+    const dist      = Math.hypot(ox * scale, oy * scale);
+    const maxDist   = Math.hypot(
+      Math.max(c.cx, 1 - c.cx) * sz,
+      Math.max(c.cy, 1 - c.cy) * sz,
+    );
+    // maxDist の 15% を許容範囲とし、それを超えると満点減点
+    // ratio を二乗することで、ズレが小さいほどスコアが指数関数的に伸びる
+    const tolerance = maxDist * 0.15;
+    const ratio     = Math.min(1, dist / tolerance) ** 2;
+    totalDeduction += maxDeductionPerPart * ratio;
+  }
+  return Math.max(0, Math.round(100 - totalDeduction));
 }
 
 function setButtons(show: ('start' | 'open' | 'retry')[], openEnabled = false): void {
@@ -318,6 +349,7 @@ btnOpen.addEventListener('click', () => {
   gameState = 'revealed';
   setButtons(['retry']);
   progEl.textContent = '';
+  scoreEl.textContent = `一致度: ${computeScore()}%`;
 });
 
 btnRetry.addEventListener('click', () => {
@@ -327,6 +359,7 @@ btnRetry.addEventListener('click', () => {
   document.querySelectorAll('.part-layer').forEach(el => el.remove());
   buildTray();
   progEl.textContent = '';
+  scoreEl.textContent = '';
   setButtons(['start']);
   blindEl.classList.remove('show');
 });
