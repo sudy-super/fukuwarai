@@ -242,7 +242,7 @@ async function captureOgpImage(): Promise<Blob> {
   ctx.font      = 'bold 38px "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
   ctx.fillStyle = '#c0392b';
   ctx.textAlign = 'center';
-  ctx.fillText(`そぽ笑い  一致度: ${score}%`, OGP_W / 2, faceY + FACE_SIZE + 52);
+  ctx.fillText(`一致度: ${score}%`, OGP_W / 2, faceY + FACE_SIZE + 52);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'),
