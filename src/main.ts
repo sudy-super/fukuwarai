@@ -416,13 +416,8 @@ btnShare.addEventListener('click', async () => {
 
     const shareUrl = `${location.origin}/s/${id}`;
     const text     = `そぽ笑い 一致度: ${score}%！`;
-
-    if (navigator.share) {
-      await navigator.share({ title: 'そぽ笑い', text, url: shareUrl });
-    } else {
-      const params = new URLSearchParams({ text: `${text} ${shareUrl}` });
-      window.open(`https://twitter.com/intent/tweet?${params}`, '_blank', 'noopener');
-    }
+    const params   = new URLSearchParams({ text: `${text} ${shareUrl}` });
+    window.open(`https://twitter.com/intent/tweet?${params}`, '_blank', 'noopener');
   } catch (err) {
     console.error(err);
     alert('シェアに失敗しました');
