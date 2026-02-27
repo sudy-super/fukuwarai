@@ -352,14 +352,8 @@ btnShare.addEventListener('click', async () => {
     btnShare.disabled = false;
     btnShare.textContent = origText;
     if (isInAppBrowser()) {
-        // アプリ内ブラウザは window.open が使えないため URL をコピーして案内する
-        try {
-            await navigator.clipboard.writeText(shareUrl);
-            alert('URLをコピーしました。外部ブラウザで開いてシェアしてください。');
-        }
-        catch {
-            prompt('以下の URL をコピーしてシェアしてください', shareUrl);
-        }
+        // アプリ内ブラウザでは window.open が効かないため直接遷移する
+        location.href = twitterUrl;
     }
     else {
         window.open(twitterUrl, '_blank', 'noopener');
