@@ -398,10 +398,18 @@ btnOpen.addEventListener('click', () => {
   scoreEl.textContent = `一致度: ${computeScore()}%`;
 });
 
+function isInAppBrowser(): boolean {
+  return /Twitter|Instagram|FBAN|FBAV|Line\/|KAKAOTALK/i.test(navigator.userAgent);
+}
+
 btnShare.addEventListener('click', async () => {
   btnShare.disabled = true;
   const origText = btnShare.textContent;
   btnShare.textContent = '生成中…';
+
+  let twitterUrl = '';
+  let shareUrl   = '';
+
   try {
     const score = computeScore();
     const blob  = await captureOgpImage();
@@ -414,16 +422,32 @@ btnShare.addEventListener('click', async () => {
     if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
     const { id } = await res.json() as { id: string };
 
-    const shareUrl = `${location.origin}/s/${id}`;
-    const text     = `そぽ笑いの一致度は${score}%でした！\n#そぽ笑い`;
-    const params   = new URLSearchParams({ text: `${text}\n${shareUrl}` });
-    window.open(`https://twitter.com/intent/tweet?${params}`, '_blank', 'noopener');
+    shareUrl   = `${location.origin}/s/${id}`;
+    const text = `そぽ笑いの一致度は${score}%でした！\n#そぽ笑い`;
+    const params = new URLSearchParams({ text: `${text}\n${shareUrl}` });
+    twitterUrl = `https://twitter.com/intent/tweet?${params}`;
   } catch (err) {
     console.error(err);
     alert('シェアに失敗しました');
-  } finally {
-    btnShare.disabled  = false;
+    btnShare.disabled    = false;
     btnShare.textContent = origText;
+    return;
+  }
+
+  // ページ遷移が起きる前にボタンを復元する
+  btnShare.disabled    = false;
+  btnShare.textContent = origText;
+
+  if (isInAppBrowser()) {
+    // アプリ内ブラウザは window.open が使えないため URL をコピーして案内する
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('URLをコピーしました。外部ブラウザで開いてシェアしてください。');
+    } catch {
+      prompt('以下の URL をコピーしてシェアしてください', shareUrl);
+    }
+  } else {
+    window.open(twitterUrl, '_blank', 'noopener');
   }
 });
 
