@@ -13,7 +13,7 @@ export async function onRequestGet(context: any): Promise<Response> {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>そぽ笑い の結果</title>
   <meta property="og:title" content="そぽ笑い">
-  <meta property="og:description" content="顔のパーツをドラッグして福笑いを楽しもう！">
+  <meta property="og:description" content="そぽたんの顔を完成させてあげよう">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${pageUrl}">
   <meta property="og:image" content="${imgUrl}">
